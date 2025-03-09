@@ -17,8 +17,8 @@ from email.message import EmailMessage
 # Load Excel data
 excel_path = "project_segment_details.xlsx"
 data = pd.ExcelFile(excel_path)
-project_details = data.parse("project details")
-segment_details = data.parse("segment details")
+project_details = data.parse("Project Details") # Adjust if the actual sheet name differs
+segment_details = data.parse("Segment Details")  # Similarly correct the sheet name
 
 # Load campaign and SAS code into vector DB
 sas_code_doc = docx.Document("sas_code_example.docx")
@@ -63,7 +63,7 @@ if st.button("Submit"):
 
                 standard_prompt = f"Generate SAS code for this campaign from '{campaign_req}' with suppressions: {', '.join(suppressions)}. Output file type: {outfile_type}. Miscellaneous info: {misc_info}."
 
-                llm = ChatOpenAI(model_name="gpt-4-turbo", temperature=0, openai_api_key=openai_api_key)
+                llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, openai_api_key=openai_api_key)
                 prompt_template = PromptTemplate(
                     input_variables=["context", "question"],
                     template="Context: {context}\n\nTask: {question}",

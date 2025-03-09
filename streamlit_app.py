@@ -20,8 +20,8 @@ if not openai_api_key:
     st.error("OpenAI API key not found! Set it in your Streamlit secrets or your .env file.")
     st.stop()
 
-# Add Synchrony logo
-st.image("syf logo.png", width=200)
+# Add Synchrony logo aligned left and smaller
+st.image("syf logo.png", width=50)
 
 # File paths
 sas_code_path = "sas_code_example.docx"
@@ -29,13 +29,19 @@ requirements_path = "campaign_requirements_example.docx"
 excel_path = "project_segment_details.xlsx"
 
 # Verify all required files exist
-for file_path in [sas_code_path, requirements_path, excel_path]:
-    if not os.path.exists(file_path := file_path):
-        st.error(f"Required file '{file_path}' not found.")
-        st.stop()
+missing_files = [fp for fp in [sas_code_path, requirements_path, excel_path] if not os.path.exists(fp)]
+if missing_files:
+    st.error(f"Required file(s) not found: {', '.join(missing_files)}")
+    st.stop()
 
-# Load Excel data
+# Load Excel data with sheet verification
 data = pd.ExcelFile(excel_path)
+st.write("Available Excel Sheets:", data.sheet_names)
+
+if "Project Details" not in data.sheet_names or "Segment Details" not in data.sheet_names:
+    st.error("Required Excel sheets ('Project Details' and 'Segment Details') are missing or incorrectly named.")
+    st.stop()
+
 project_details = data.parse("Project Details")
 segment_details = data.parse("Segment Details")
 
@@ -117,14 +123,14 @@ if st.button("🚀 Submit"):
                 try:
                     msg = EmailMessage()
                     msg['Subject'] = f"Campaign Details - Workfront {wf_number}"
-                    msg['From'] = "mirza.22sept@gmail.com"
+                    msg['From'] = "your_email@gmail.com"
                     msg['To'] = user_email
                     msg.set_content(f"Attached campaign details for Workfront Number {wf_number}.")
                     msg.add_attachment(excel_buffer.read(), maintype='application', subtype='xlsx', filename=f"Campaign_{wf_number}.xlsx")
 
                     with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
                         smtp.starttls()
-                        smtp.login("mirza.22sept@gmail.com", "your_password")
+                        smtp.login("your_email@gmail.com", "your_password")
                         smtp.send_message(msg)
 
                     st.success(f"Excel file successfully sent to {user_email}")

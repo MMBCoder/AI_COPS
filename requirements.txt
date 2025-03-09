@@ -5,4 +5,7 @@ faiss-cpu
 python-docx
 openai
 tiktoken
-python-dotenv
+pandas
+openpyxl
+smtplib
+email

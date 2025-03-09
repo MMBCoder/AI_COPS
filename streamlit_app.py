@@ -82,7 +82,7 @@ if st.button("🚀 Submit"):
 
                 standard_prompt = f"Generate SAS code for this campaign from '{campaign_req}' with suppressions: {', '.join(suppressions)}. Outfile type: {outfile_type}. Misc info: {misc_info}."
 
-                llm = ChatOpenAI(model_name="gpt-4-turbo", temperature=0, openai_api_key=openai_api_key)
+                llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, openai_api_key=openai_api_key)
                 prompt_template = PromptTemplate(
                     input_variables=["context", "question"],
                     template="Context: {context}\n\nTask: {question}",

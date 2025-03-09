@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.chat_models import ChatOpenAI
-from langchain.chains import RetrievalQA
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_community.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
+from langchain.chains import RetrievalQA
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import docx
 import os
@@ -14,38 +14,55 @@ from io import BytesIO
 import smtplib
 from email.message import EmailMessage
 
-# Load Excel data
+# Verify environment variable
+openai_api_key = os.getenv("OPENAI_API_KEY")
+if not openai_api_key:
+    st.error("OpenAI API key not found! Set it in your Streamlit secrets or your .env file.")
+    st.stop()
+
+# Add Synchrony logo
+st.image("syf logo.png", width=200)
+
+# File paths
+sas_code_path = "sas_code_example.docx"
+requirements_path = "campaign_requirements_example.docx"
 excel_path = "project_segment_details.xlsx"
+
+# Verify all required files exist
+for file_path in [sas_code_path, requirements_path, excel_path]:
+    if not os.path.exists(file_path := file_path):
+        st.error(f"Required file '{file_path}' not found.")
+        st.stop()
+
+# Load Excel data
 data = pd.ExcelFile(excel_path)
-project_details = data.parse("Project Details") # Adjust if the actual sheet name differs
-segment_details = data.parse("Segment Details")  # Similarly correct the sheet name
+project_details = data.parse("Project Details")
+segment_details = data.parse("Segment Details")
 
-# Load campaign and SAS code into vector DB
-sas_code_doc = docx.Document("sas_code_example.docx")
-campaign_doc = docx.Document("campaign_requirements_example.docx")
+# Load SAS code and campaign requirements
+def load_docx(file_path):
+    doc = docx.Document(file_path)
+    return '\n'.join(para.text for para in doc.paragraphs)
 
-sas_text = "\n".join([para.text for para in sas_code_doc.paragraphs])
-campaign_text = "\n".join([para.text for para in campaign_doc.paragraphs])
+sas_text = load_docx(sas_code_path)
+campaign_text = load_docx(requirements_path)
 
+# Prepare vector DB
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
 sas_chunks = text_splitter.split_text(sas_text)
 campaign_chunks = text_splitter.split_text(campaign_text)
 
-openai_api_key = os.getenv("OPENAI_API_KEY")
 embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
 vector_db = FAISS.from_texts(sas_chunks + campaign_chunks, embeddings)
 
-# Streamlit UI setup
-st.title("Campaign Operation Programming Solution")
+# Streamlit UI enhancements
+st.title("✨ AI-Based Campaign Operation Programming ✨")
 
-def is_numeric(input_str):
-    return input_str.isdigit()
+wf_number = st.text_input("🔢 Enter Workfront Number (Numeric Only)")
+user_email = st.text_input("📧 Enter Your Email")
 
-wf_number = st.text_input("Enter Workfront Number (Numeric Only)")
-user_email = st.text_input("Enter Your Email")
-
-if st.button("Submit"):
-    if not is_numeric(wf_number):
+if st.button("🚀 Submit"):
+    if not wf_number.isdigit():
         st.error("Workfront number must be numeric.")
     else:
         if st.confirm(f"You entered {wf_number}. Is this correct?"):
@@ -61,9 +78,9 @@ if st.button("Submit"):
                 outfile_type = project_info.iloc[0]['Outfile']
                 misc_info = project_info.iloc[0]['Misc']
 
-                standard_prompt = f"Generate SAS code for this campaign from '{campaign_req}' with suppressions: {', '.join(suppressions)}. Output file type: {outfile_type}. Miscellaneous info: {misc_info}."
+                standard_prompt = f"Generate SAS code for this campaign from '{campaign_req}' with suppressions: {', '.join(suppressions)}. Outfile type: {outfile_type}. Misc info: {misc_info}."
 
-                llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, openai_api_key=openai_api_key)
+                llm = ChatOpenAI(model_name="gpt-4-turbo", temperature=0, openai_api_key=openai_api_key)
                 prompt_template = PromptTemplate(
                     input_variables=["context", "question"],
                     template="Context: {context}\n\nTask: {question}",
@@ -78,25 +95,20 @@ if st.button("Submit"):
 
                 sas_code_response = qa_chain.run(standard_prompt)
 
-                st.subheader("Generated SAS Code")
+                st.subheader("📄 Generated SAS Code")
                 st.code(sas_code_response, language='sas')
 
                 wb = Workbook()
-
                 ws1 = wb.active
                 ws1.title = "Project Details"
                 for r in dataframe_to_rows(project_info, index=False, header=True):
                     ws1.append(r)
 
-                ws2 = wb.create_sheet("Waterfall")
-                ws2.append(["Waterfall Data Placeholder"])
-
+                wb.create_sheet("Waterfall").append(["Waterfall Data Placeholder"])
                 ws3 = wb.create_sheet("Segment Details")
                 for r in dataframe_to_rows(segment_info, index=False, header=True):
                     ws3.append(r)
-
-                ws4 = wb.create_sheet("Output File Layout")
-                ws4.append(["Output File Layout", outfile_type])
+                wb.create_sheet("Output File Layout").append(["Output File Layout", outfile_type])
 
                 excel_buffer = BytesIO()
                 wb.save(excel_buffer)

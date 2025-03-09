@@ -66,9 +66,7 @@ if st.button("🚀 Submit"):
     if not wf_number.isdigit():
         st.error("Workfront number must be numeric.")
     else:
-        confirm = st.checkbox(f"Confirm Workfront Number: {wf_number}")
-        if confirm:
-            wf_number_int = int(wf_number)
+                    wf_number_int = int(wf_number)
             project_info = project_details[project_details['WFNO'] == wf_number_int]
             segment_info = segment_details[segment_details['WFNO'] == wf_number_int]
 

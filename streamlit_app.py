@@ -65,10 +65,7 @@ user_email = st.text_input("📧 Enter Your Email")
 if st.button("🚀 Submit"):
     if not wf_number.isdigit():
         st.error("Workfront number must be numeric.")
-    else:
-                    wf_number_int = int(wf_number)
-            project_info = project_details[project_details['WFNO'] == wf_number_int]
-            segment_info = segment_details[segment_details['WFNO'] == wf_number_int]
+    else:    wf_number_int = int(wf_number)    project_info = project_details[project_details['WFNO'] == wf_number_int]    segment_info = segment_details[segment_details['WFNO'] == wf_number_int]
 
             if project_info.empty or segment_info.empty:
                 st.error("No matching details found for this Workfront number.")

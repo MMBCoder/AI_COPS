@@ -1,57 +1,54 @@
 import streamlit as st
 import pandas as pd
+import docx
+import os
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-import docx
-import os
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from io import BytesIO
 import smtplib
 from email.message import EmailMessage
 
-# Verify environment variable
+# Verify the API key is loaded
 openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
-    st.error("OpenAI API key not found! Set it in your Streamlit secrets or your .env file.")
+    st.error("OpenAI API key not found! Please set it in your Streamlit secrets or your .env file.")
     st.stop()
 
-# Add Synchrony logo aligned left and smaller
-st.image("syf logo.png", width=50)
-
-# File paths
-sas_code_path = "sas_code_example.docx"
-requirements_path = "campaign_requirements_example.docx"
-excel_path = "project_segment_details.xlsx"
-
-# Verify all required files exist
-missing_files = [fp for fp in [sas_code_path, requirements_path, excel_path] if not os.path.exists(fp)]
+# Verify required files
+required_files = ["sas_code_example.docx", "campaign_requirements_example.docx", "project_segment_details.xlsx", "syf logo.png"]
+missing_files = [file for file in required_files if not os.path.exists(file)]
 if missing_files:
-    st.error(f"Required file(s) not found: {', '.join(missing_files)}")
+    st.error(f"Missing required file(s): {', '.join(missing_files)}")
     st.stop()
 
-# Load Excel data with sheet verification
+# Display Synchrony logo
+st.image("syf logo.png", width=50)
+st.title("✨ AI-Based Campaign Operation Programming ✨")
+
+# Load and process Excel data
+excel_path = "project_segment_details.xlsx"
 data = pd.ExcelFile(excel_path)
-st.write("Available Excel Sheets:", data.sheet_names)
 
 if "Project Details" not in data.sheet_names or "Segment Details" not in data.sheet_names:
-    st.error("Required Excel sheets ('Project Details' and 'Segment Details') are missing or incorrectly named.")
+    st.error(f"Required Excel sheets missing. Available sheets: {data.sheet_names}")
     st.stop()
 
 project_details = data.parse("Project Details")
 segment_details = data.parse("Segment Details")
 
-# Load SAS code and campaign requirements
+# Load campaign and SAS code
 def load_docx(file_path):
     doc = docx.Document(file_path)
     return '\n'.join(para.text for para in doc.paragraphs)
 
-sas_text = load_docx(sas_code_path)
-campaign_text = load_docx(requirements_path)
+sas_text = load_docx("sas_code_example.docx")
+campaign_text = load_docx("campaign_requirements_example.docx")
 
 # Prepare vector DB
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
@@ -61,9 +58,7 @@ campaign_chunks = text_splitter.split_text(campaign_text)
 embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
 vector_db = FAISS.from_texts(sas_chunks + campaign_chunks, embeddings)
 
-# Streamlit UI enhancements
-st.title("✨ AI-Based Campaign Operation Programming ✨")
-
+# UI Input
 wf_number = st.text_input("🔢 Enter Workfront Number (Numeric Only)")
 user_email = st.text_input("📧 Enter Your Email")
 
@@ -71,7 +66,8 @@ if st.button("🚀 Submit"):
     if not wf_number.isdigit():
         st.error("Workfront number must be numeric.")
     else:
-        if st.confirm(f"You entered {wf_number}. Is this correct?"):
+        confirm = st.checkbox(f"Confirm Workfront Number: {wf_number}")
+        if confirm:
             wf_number_int = int(wf_number)
             project_info = project_details[project_details['WFNO'] == wf_number_int]
             segment_info = segment_details[segment_details['WFNO'] == wf_number_int]
@@ -79,9 +75,9 @@ if st.button("🚀 Submit"):
             if project_info.empty or segment_info.empty:
                 st.error("No matching details found for this Workfront number.")
             else:
-                campaign_req = project_info.iloc[0]['Campaign Requirements']
+                campaign_req = project_info.iloc[0]['Campaign Requirement']
                 suppressions = [field for field in ['Marketing', 'Risk', 'Output'] if project_info.iloc[0][field] == 'Y']
-                outfile_type = project_info.iloc[0]['Outfile Required']
+                outfile_type = project_info.iloc[0]['Outfile']
                 misc_info = project_info.iloc[0]['Misc']
 
                 standard_prompt = f"Generate SAS code for this campaign from '{campaign_req}' with suppressions: {', '.join(suppressions)}. Outfile type: {outfile_type}. Misc info: {misc_info}."
@@ -100,10 +96,10 @@ if st.button("🚀 Submit"):
                 )
 
                 sas_code_response = qa_chain.run(standard_prompt)
-
                 st.subheader("📄 Generated SAS Code")
                 st.code(sas_code_response, language='sas')
 
+                # Workbook creation
                 wb = Workbook()
                 ws1 = wb.active
                 ws1.title = "Project Details"
@@ -120,6 +116,7 @@ if st.button("🚀 Submit"):
                 wb.save(excel_buffer)
                 excel_buffer.seek(0)
 
+                # Email logic
                 try:
                     msg = EmailMessage()
                     msg['Subject'] = f"Campaign Details - Workfront {wf_number}"

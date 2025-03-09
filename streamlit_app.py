@@ -79,9 +79,9 @@ if st.button("🚀 Submit"):
             if project_info.empty or segment_info.empty:
                 st.error("No matching details found for this Workfront number.")
             else:
-                campaign_req = project_info.iloc[0]['Campaign Requirement']
+                campaign_req = project_info.iloc[0]['Campaign Requirements']
                 suppressions = [field for field in ['Marketing', 'Risk', 'Output'] if project_info.iloc[0][field] == 'Y']
-                outfile_type = project_info.iloc[0]['Outfile']
+                outfile_type = project_info.iloc[0]['Outfile Required']
                 misc_info = project_info.iloc[0]['Misc']
 
                 standard_prompt = f"Generate SAS code for this campaign from '{campaign_req}' with suppressions: {', '.join(suppressions)}. Outfile type: {outfile_type}. Misc info: {misc_info}."
@@ -123,14 +123,14 @@ if st.button("🚀 Submit"):
                 try:
                     msg = EmailMessage()
                     msg['Subject'] = f"Campaign Details - Workfront {wf_number}"
-                    msg['From'] = "your_email@gmail.com"
+                    msg['From'] = "mirza.22sept@gmail.com"
                     msg['To'] = user_email
                     msg.set_content(f"Attached campaign details for Workfront Number {wf_number}.")
                     msg.add_attachment(excel_buffer.read(), maintype='application', subtype='xlsx', filename=f"Campaign_{wf_number}.xlsx")
 
                     with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
                         smtp.starttls()
-                        smtp.login("your_email@gmail.com", "your_password")
+                        smtp.login("mirza.22sept@gmail.com", "your_password")
                         smtp.send_message(msg)
 
                     st.success(f"Excel file successfully sent to {user_email}")

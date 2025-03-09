@@ -112,26 +112,14 @@ if st.button("🚀 Submit"):
                             retriever=vector_db.as_retriever(),
                             chain_type_kwargs={"prompt": prompt_template},
                         )
+                        
+                        st.write("**Executing LLM Query with Prompt:**", standard_prompt)
                         sas_code_response = qa_chain.run(retrieved_text + "\n" + standard_prompt)
                         
-                        st.subheader("📄 Generated SAS Code")
-                        st.code(sas_code_response, language='sas')
+                        if not sas_code_response.strip():
+                            st.error("LLM did not return a SAS code. Please check OpenAI API usage.")
+                        else:
+                            st.subheader("📄 Generated SAS Code")
+                            st.code(sas_code_response, language='sas')
                     except Exception as e:
                         st.error(f"Error generating SAS code: {e}")
-
-                # Email logic
-                try:
-                    msg = EmailMessage()
-                    msg['Subject'] = f"Campaign Details - Workfront {wf_number}"
-                    msg['From'] = "mirza.22sept@gmail.com"
-                    msg['To'] = user_email
-                    msg.set_content(f"Attached campaign details for Workfront Number {wf_number}.")
-
-                    with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
-                        smtp.starttls()
-                        smtp.login("mirza.22sept@gmail.com", "your_password")
-                        smtp.send_message(msg)
-
-                    st.success(f"Email successfully sent to {user_email}")
-                except Exception as e:
-                    st.error(f"Email sending failed: {e}")

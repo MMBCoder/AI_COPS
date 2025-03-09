@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import docx
 import os
-from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
@@ -28,7 +28,7 @@ if missing_files:
     st.stop()
 
 # Display Synchrony logo
-st.image("syf logo.png", width=50)
+st.image("syf logo.png", width=100)
 st.title("✨ AI-Based Campaign Operation Programming ✨")
 
 # Load and process Excel data
@@ -80,41 +80,10 @@ if st.button("🚀 Submit"):
                 outfile_type = project_info.iloc[0]['Outfile']
                 misc_info = project_info.iloc[0]['Misc']
 
-                standard_prompt = f"Generate SAS code for this campaign from '{campaign_req}' with suppressions: {', '.join(suppressions)}. Outfile type: {outfile_type}. Misc info: {misc_info}."
-
-                llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, openai_api_key=openai_api_key)
-                prompt_template = PromptTemplate(
-                    input_variables=["context", "question"],
-                    template="Context: {context}\n\nTask: {question}",
-                )
-
-                qa_chain = RetrievalQA.from_chain_type(
-                    llm=llm,
-                    chain_type="stuff",
-                    retriever=vector_db.as_retriever(),
-                    chain_type_kwargs={"prompt": prompt_template},
-                )
-
-                sas_code_response = qa_chain.run(standard_prompt)
-                st.subheader("📄 Generated SAS Code")
-                st.code(sas_code_response, language='sas')
-
-                # Workbook creation
-                wb = Workbook()
-                ws1 = wb.active
-                ws1.title = "Project Details"
-                for r in dataframe_to_rows(project_info, index=False, header=True):
-                    ws1.append(r)
-
-                wb.create_sheet("Waterfall").append(["Waterfall Data Placeholder"])
-                ws3 = wb.create_sheet("Segment Details")
-                for r in dataframe_to_rows(segment_info, index=False, header=True):
-                    ws3.append(r)
-                wb.create_sheet("Output File Layout").append(["Output File Layout", outfile_type])
-
-                excel_buffer = BytesIO()
-                wb.save(excel_buffer)
-                excel_buffer.seek(0)
+                standard_prompt = (f"Generate SAS code for this campaign from '{campaign_req}'.\n"
+                    f"Apply suppressions for any fields that contain 'Y' among: {', '.join(suppressions)}.\n"
+                    f"Outfile type: {outfile_type}. If 'EM', use an email file layout; if 'DM', use a direct mail file layout; if 'DE', use both.\n"
+                    f"Misc info: {misc_info}.\n")
 
                 # Email logic
                 try:
@@ -123,13 +92,12 @@ if st.button("🚀 Submit"):
                     msg['From'] = "mirza.22sept@gmail.com"
                     msg['To'] = user_email
                     msg.set_content(f"Attached campaign details for Workfront Number {wf_number}.")
-                    msg.add_attachment(excel_buffer.read(), maintype='application', subtype='xlsx', filename=f"Campaign_{wf_number}.xlsx")
 
                     with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
                         smtp.starttls()
                         smtp.login("mirza.22sept@gmail.com", "your_password")
                         smtp.send_message(msg)
 
-                    st.success(f"Excel file successfully sent to {user_email}")
+                    st.success(f"Email successfully sent to {user_email}")
                 except Exception as e:
                     st.error(f"Email sending failed: {e}")

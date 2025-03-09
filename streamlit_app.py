@@ -85,6 +85,33 @@ if st.button("🚀 Submit"):
                     f"Outfile type: {outfile_type}. If 'EM', use an email file layout; if 'DM', use a direct mail file layout; if 'DE', use both.\n"
                     f"Misc info: {misc_info}.\n")
 
+                # Display retrieved data for debugging
+                st.write("**Debugging Info:**")
+                st.write("Campaign Requirement:", campaign_req)
+                st.write("Suppressions Applied:", suppressions)
+                st.write("Outfile Type:", outfile_type)
+                st.write("Misc Info:", misc_info)
+                st.write("Standard Prompt:", standard_prompt)
+
+                try:
+                    llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, openai_api_key=openai_api_key)
+                    prompt_template = PromptTemplate(
+                        input_variables=["context", "question"],
+                        template="Context: {context}\n\nTask: {question}",
+                    )
+                    qa_chain = RetrievalQA.from_chain_type(
+                        llm=llm,
+                        chain_type="stuff",
+                        retriever=vector_db.as_retriever(),
+                        chain_type_kwargs={"prompt": prompt_template},
+                    )
+                    sas_code_response = qa_chain.run(standard_prompt)
+                    
+                    st.subheader("📄 Generated SAS Code")
+                    st.code(sas_code_response, language='sas')
+                except Exception as e:
+                    st.error(f"Error generating SAS code: {e}")
+
                 # Email logic
                 try:
                     msg = EmailMessage()

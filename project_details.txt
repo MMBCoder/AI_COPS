@@ -1,0 +1,4 @@
+WFNO|Campaign Name|Marketing|Risk|Optout|Campaign Requirements|Outfile Required|Misc |Project Owner|Client|Channel Manager|Cops Analyst
+123456|GPCC EMOB|Y|Y|Y|Target the GPCC customers opened there accounts in last 30 days but not activated|EM|DOB (days on Book)|Mirza|GPCC|Khagendra|Ravi
+123453|GPCC CLI|Y|Y|Y|Target the GPCC customers recently recieved the CLI|EM|New CLI |Mirza|GPCC|Khagendra|Raj
+

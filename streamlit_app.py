@@ -66,21 +66,24 @@ if st.button("🚀 Submit"):
     if not wf_number.isdigit():
         st.error("Workfront number must be numeric.")
     else:
-        confirm = st.checkbox(f"Confirm Workfront Number: {wf_number}")
-        if confirm:
-            wf_number_int = int(wf_number)
-            project_info = project_details[project_details['WFNO'] == wf_number_int]
-            segment_info = segment_details[segment_details['WFNO'] == wf_number_int]
+        wf_number_int = int(wf_number)
+        project_info = project_details[project_details['WFNO'] == wf_number_int]
+        segment_info = segment_details[segment_details['WFNO'] == wf_number_int]
 
-            if project_info.empty or segment_info.empty:
-                st.error("No matching details found for this Workfront number.")
-            else:
-                campaign_req = project_info.iloc[0]['Campaign Requirements']
-                suppressions = [field for field in ['Marketing', 'Risk', 'Output'] if project_info.iloc[0][field] == 'Y']
-                outfile_type = project_info.iloc[0]['Outfile Required']
-                misc_info = project_info.iloc[0]['Misc']
-
-                standard_prompt = f"Write a SAS code for a campaign to target '{campaign_req}' with suppressions: {', '.join(suppressions)}. Outfile type: {outfile_type}. Misc info: {misc_info}."
+        if project_info.empty or segment_info.empty:
+            st.error("No matching details found for this Workfront number.")
+        else:
+            campaign_req = project_info.iloc[0]['Campaign Requirements']
+            suppressions = [field for field in ['Marketing', 'Risk', 'Output'] 
+                            if project_info.iloc[0][field] == 'Y']
+            outfile_type = project_info.iloc[0]['Outfile Required']
+            misc_info = project_info.iloc[0]['Misc']
+            standard_prompt = (
+                f"Generate SAS code for a campaign with target criteria '{campaign_req}' "
+                f"with suppressions: {', '.join(suppressions)}. "
+                f"Outfile type: {outfile_type}. Misc info: {misc_info}."
+            )
+            # ... (SAS code generation and email logic continue here, unchanged)
 
                 llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, openai_api_key=openai_api_key)
                 prompt_template = PromptTemplate(

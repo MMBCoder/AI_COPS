@@ -28,8 +28,8 @@ if missing_files:
     st.stop()
 
 # UI Elements
-st.image("syf logo.png", width=50)
-st.title("✨ AI-Based Campaign Operation Programming ✨")
+st.image("syf logo.png", width=100)
+st.title("AI-Based Campaign Operation Programming Solution (AI-COPS)")
 
 # Load and process text files
 project_details = pd.read_csv("project_details.txt", sep='|')

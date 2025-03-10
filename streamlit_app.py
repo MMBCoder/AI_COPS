@@ -51,6 +51,8 @@ all_chunks = text_splitter.split_text(sas_text) + text_splitter.split_text(campa
 embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
 vector_db = FAISS.from_texts(all_chunks, embeddings)
 
+st.success("SAS code and Campaign requirements loaded Successfully in Vector DB")
+
 # UI Input
 wf_number = st.text_input("🔢 Enter Workfront Number (Numeric Only)")
 user_email = st.text_input("📧 Enter Your Email")

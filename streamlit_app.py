@@ -121,12 +121,18 @@ if st.button("🚀 Submit"):
             excel_buffer = BytesIO()
             wb.save(excel_buffer)
             excel_buffer.seek(0)
+            
 
             # Email Logic (unchanged)
             try:
+                EMAIL_ADDRESS = "mirza.22sept@gmail.com"
+                EMAIL_APP_PASSWORD = os.getenv("EMAIL_APP_PASSWORD")
+                if not EMAIL_APP_PASSWORD:
+                    st.error("Email App Password not set in environment variables.")
+                    st.stop()
                 msg = EmailMessage()
                 msg['Subject'] = f"Campaign Details - Workfront {wf_number}"
-                msg['From'] = "mirza.22sept@gmail.com"
+                msg['From'] = EMAIL_APP_PASSWORD
                 msg['To'] = user_email
                 msg.set_content(f"Attached campaign details for Workfront Number {wf_number}.")
                 msg.add_attachment(excel_buffer.read(), maintype='application',
@@ -134,7 +140,7 @@ if st.button("🚀 Submit"):
 
                 with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
                     smtp.starttls()
-                    smtp.login("mirza.22sept@gmail.com", "your_password")
+                    smtp.login(EMAIL_ADDRESS, EMAIL_APP_PASSWORD)
                     smtp.send_message(msg)
 
                 st.success(f"Excel file successfully sent to {user_email}")
